@@ -1,30 +1,44 @@
-transitions = {
-    'A1': {'0': 'A1', '1': 'B2'},
-    'B1': {'0': 'C1', '1': 'D2'},
-    'B2': {'0': 'C1', '1': 'D2'},
-    'C1': {'0': 'D2', '1': 'B2'},
-    'C2': {'0': 'D1', '1': 'B2'},
-    'D1': {'0': 'B2', '1': 'C1'},
-    'D2': {'0': 'B2', '1': 'C1'},
-    'E1': {'0': 'D2', '1': 'E1'}
+mealy = {
+    'A': {'0': ('A','A'), '1': ('B','B')},
+    'B': {'0': ('C','A'), '1': ('D','B')},
+    'C': {'0': ('D','C'), '1': ('B','B')},
+    'D': {'0': ('B','B'), '1': ('C','C')},
+    'E': {'0': ('D','C'), '1': ('E','C')},
 }
 
+inputs = ['0','1']
 
-output = {
-    'A1': '1', 'A2': 'B', 'B1': 'A', 'B2': 'B',
-    'C1': 'C', 'C2': 'B', 'D1': 'B', 'D2': 'C', 'E1': 'C'
-}
+def moore_key(state, out): return f"{state}_on{out}"
 
-def process_input(sequence, start_state='A1'):
-    state = start_state
-    result = ''
-    for symbol in sequence:
-        result += output[state]
-        state = transitions[state][symbol]
-    result += output[state]  
-    return result
 
-inputs = ["00110", "11001", "1010110", "101111"]
+moore_states = {}
+for s in mealy:
+    for inp in inputs:
+        ns, out = mealy[s][inp]
+        moore_states[moore_key(ns,out)] = out
 
-for inp in inputs:
-    print(f"Input: {inp} -> Output: {process_input(inp)}")
+
+moore_underlying = {k: k.split('_on')[0] for k in moore_states}
+moore_trans = {}
+for key, underlying in moore_underlying.items():
+    moore_trans[key] = {}
+    for inp in inputs:
+        ns, out = mealy[underlying][inp]
+        moore_trans[key][inp] = moore_key(ns, out)
+
+
+def simulate(input_string, start_mealy='A'):
+    s = start_mealy
+    outputs = []
+    moore_seq = []
+    for ch in input_string:
+        ns, out = mealy[s][ch]
+        outputs.append(out)
+        moore_seq.append(moore_key(ns, out))
+        s = ns
+    return ''.join(outputs), moore_seq
+
+tests = ["00110", "11001", "1010110", "101111"]
+for t in tests:
+    outs, seq = simulate(t, 'A')
+    print(f"{t} -> {outs}   Moore seq: {seq}")
